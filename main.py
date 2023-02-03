@@ -36,6 +36,15 @@ class Game:
         self.extra = pygame.sprite.GroupSingle()
         self.extra_spawn_time = randint(400, 800)
 
+        # Audio
+        music = pygame.mixer.Sound('audio/music.wav')
+        music.set_volume(0.2)
+        music.play(loops = -1)
+        self.laser_sound = pygame.mixer.Sound('audio/audio_laser.wav')
+        self.laser_sound.set_volume(0.5)
+        self.explosion_sound = pygame.mixer.Sound('audio/audio_explosion.wav')
+        self.explosion_sound.set_volume(0.3)
+
     def create_multiple_obstacles(self, *offset, x_start, y_start):
         for offset_x in offset:
             self.create_obstacle(x_start, y_start, offset_x)
@@ -79,6 +88,7 @@ class Game:
             random_alien = choice(self.aliens.sprites())
             laser_sprite = Laser(random_alien.rect.center, 6, screen_height)
             self.alien_lasers.add(laser_sprite)
+            self.laser_sound.play()
 
     def extra_alien_timer(self):
         self.extra_spawn_time -= 1
@@ -99,11 +109,13 @@ class Game:
                     for alien in aliens_hit:
                         self.score += alien.value
                     laser.kill()
+                    self.explosion_sound.play()
 
                 # extra alien collision
                 if pygame.sprite.spritecollide(laser, self.extra, True):
                     self.score += 500
                     laser.kill()
+                    self.explosion_sound.play()
 
         # alien lasers
         if self.alien_lasers:
@@ -139,6 +151,12 @@ class Game:
         score_rect = score_surf.get_rect(topleft = (10, -10))
         screen.blit(score_surf, score_rect)
 
+    def victory_message(self):
+        if not self.aliens.sprites():
+            victory_surf = self.font.render('You won', False, 'white')
+            victory_rect = victory_surf.get_rect(center = (screen_width / 2, screen_height / 2))
+            screen.blit(victory_surf, victory_rect)
+
     def run(self):
         self.player.update()
         self.aliens.update(self.alien_direction)
@@ -158,6 +176,7 @@ class Game:
 
         self.display_lives()
         self.display_score()
+        self.victory_message()
 
 
 class CRT:
