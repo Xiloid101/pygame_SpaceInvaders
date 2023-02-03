@@ -11,6 +11,13 @@ class Game:
         player_sprite = Player((screen_width / 2, screen_height), screen_width, 5)
         self.player = pygame.sprite.GroupSingle(player_sprite)
 
+        # health and score setup
+        self.lives = 3
+        self.live_surf = pygame.image.load('graphics/player.png').convert_alpha()
+        self.live_x_start_pos = screen_width - (self.live_surf.get_size()[0] * 2 + 20)
+        self.score = 0
+        self.font = pygame.font.Font('font/Pixeled.ttf', 20)
+
         # obstacle setup
         self.shape = obstacle.shape
         self.block_size = 6
@@ -87,10 +94,15 @@ class Game:
                 if pygame.sprite.spritecollide(laser, self.blocks, True):
                     laser.kill()
                 # alien collision
-                if pygame.sprite.spritecollide(laser, self.aliens, True):
+                aliens_hit = pygame.sprite.spritecollide(laser, self.aliens, True)
+                if aliens_hit:
+                    for alien in aliens_hit:
+                        self.score += alien.value
                     laser.kill()
+
                 # extra alien collision
                 if pygame.sprite.spritecollide(laser, self.extra, True):
+                    self.score += 500
                     laser.kill()
 
         # alien lasers
@@ -102,7 +114,10 @@ class Game:
                 # player collision
                 if pygame.sprite.spritecollide(laser, self.player, False):
                     laser.kill()
-                    print('player hit')
+                    self.lives -= 1
+                    if self.lives <= 0:
+                        pygame.quit()
+                        sys.exit()
 
         # aliens
         if self.aliens:
@@ -114,24 +129,54 @@ class Game:
                     pygame.quit()
                     sys.exit()
 
+    def display_lives(self):
+        for live in range(self.lives - 1):
+            x = self.live_x_start_pos + (live * (self.live_surf.get_size()[0] + 10))
+            screen.blit(self.live_surf, (x, 8))
+
+    def display_score(self):
+        score_surf = self.font.render(f'score: {self.score}', False, 'white')
+        score_rect = score_surf.get_rect(topleft = (10, -10))
+        screen.blit(score_surf, score_rect)
+
     def run(self):
-        # update all sprite groups
         self.player.update()
         self.aliens.update(self.alien_direction)
-        self.alien_position_checker()
         self.alien_lasers.update()
-        self.extra_alien_timer()
         self.extra.update()
+
+        self.alien_position_checker()
+        self.extra_alien_timer()
         self.collision_checks()
 
-        # draw all sprite group
         self.player.sprite.lasers.draw(screen)
         self.player.draw(screen)
-
         self.blocks.draw(screen)
         self.aliens.draw(screen)
         self.alien_lasers.draw(screen)
         self.extra.draw(screen)
+
+        self.display_lives()
+        self.display_score()
+
+
+class CRT:
+    # adding tv screen effect on top
+    def __init__(self):
+        self.tv = pygame.image.load('graphics/tv.png').convert_alpha()
+        self.tv = pygame.transform.scale(self.tv, (screen_width, screen_height))
+
+    def create_crt_lines(self):
+        line_height = 3
+        line_amount = int(screen_height / line_height)
+        for line in range(line_amount):
+            y_pos = line * line_height
+            pygame.draw.line(self.tv, 'black', (0, y_pos), (screen_width, y_pos), 1)
+
+    def draw(self):
+        self.tv.set_alpha(randint(75, 90))  # transparency between 0 to 100 and is constantly changing
+        screen.blit(self.tv, (0, 0))
+        self.create_crt_lines()
 
 if __name__ == "__main__":
     pygame.init()
@@ -140,6 +185,7 @@ if __name__ == "__main__":
     screen = pygame.display.set_mode((screen_width, screen_height))
     clock = pygame.time.Clock()
     game = Game()
+    crt = CRT()
 
     ALIENLASER = pygame.USEREVENT + 1
     pygame.time.set_timer(ALIENLASER, 800)
@@ -154,6 +200,7 @@ if __name__ == "__main__":
 
         screen.fill((30,30,30))
         game.run()
+        crt.draw()
 
         pygame.display.flip()
         clock.tick(60)
