@@ -22,7 +22,7 @@ class Extra(pygame.sprite.Sprite):
         else:
             x = -50
             self.speed = 3
-        self.rect = self.image.get_rect(topleft=(x, 80))
+        self.rect = self.image.get_rect(topleft=(x, 50))
 
     def update(self):
         self.rect.x += self.speed

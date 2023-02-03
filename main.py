@@ -42,7 +42,7 @@ class Game:
                     block = obstacle.Block(self.block_size, (241,79,80), x, y)
                     self.blocks.add(block)
 
-    def alien_setup(self, rows, cols, x_distance = 60, y_distance = 48, x_offset = 70, y_offset = 100):
+    def alien_setup(self, rows, cols, x_distance = 60, y_distance = 48, x_offset = 70, y_offset = 50):
         for row_index, row in enumerate(range(rows)):
             for col_index, col in enumerate(range(cols)):
                 x = col_index * x_distance + x_offset
@@ -79,6 +79,41 @@ class Game:
             self.extra.add(Extra(choice(['right', 'left']), screen_width))
             self.extra_spawn_time = randint(400, 800)
 
+    def collision_checks(self):
+        # player lasers
+        if self.player.sprite.lasers:
+            for laser in self.player.sprite.lasers:
+                # obstacle collision
+                if pygame.sprite.spritecollide(laser, self.blocks, True):
+                    laser.kill()
+                # alien collision
+                if pygame.sprite.spritecollide(laser, self.aliens, True):
+                    laser.kill()
+                # extra alien collision
+                if pygame.sprite.spritecollide(laser, self.extra, True):
+                    laser.kill()
+
+        # alien lasers
+        if self.alien_lasers:
+            for laser in self.alien_lasers:
+                # obstacle collision
+                if pygame.sprite.spritecollide(laser, self.blocks, True):
+                    laser.kill()
+                # player collision
+                if pygame.sprite.spritecollide(laser, self.player, False):
+                    laser.kill()
+                    print('player hit')
+
+        # aliens
+        if self.aliens:
+            for alien in self.aliens:
+                # obstacle collision
+                pygame.sprite.spritecollide(alien, self.blocks, True)
+                # player collision
+                if pygame.sprite.spritecollide(alien, self.player, False):
+                    pygame.quit()
+                    sys.exit()
+
     def run(self):
         # update all sprite groups
         self.player.update()
@@ -87,6 +122,7 @@ class Game:
         self.alien_lasers.update()
         self.extra_alien_timer()
         self.extra.update()
+        self.collision_checks()
 
         # draw all sprite group
         self.player.sprite.lasers.draw(screen)
